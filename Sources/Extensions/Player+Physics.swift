@@ -69,7 +69,11 @@ extension Player {
             return
         }
 
-        let normalizedDirection = length(direction) > 0.001 ? normalize(direction) : .zero
+        // SAFETY: Check for zero vector to prevent NaN
+        let dirLength = simd_length(direction)
+        guard dirLength > 0.001 else { return }
+
+        let normalizedDirection = direction / dirLength
         let force = normalizedDirection * speed * physicsBody.mass
 
         physicsBody.addForce(force)

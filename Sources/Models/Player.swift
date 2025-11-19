@@ -38,7 +38,11 @@ class Player: Identifiable, ObservableObject {
 
     /// Move the player in a direction
     func move(direction: SIMD3<Float>, speed: Float = 2.0) {
-        let normalizedDirection = normalize(direction)
+        // SAFETY: Check for zero vector to prevent NaN
+        let length = simd_length(direction)
+        guard length > 0.001 else { return }
+
+        let normalizedDirection = direction / length
         velocity += normalizedDirection * speed
     }
 

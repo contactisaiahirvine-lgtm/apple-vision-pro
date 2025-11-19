@@ -49,7 +49,14 @@ extension GameManager {
 
     private var cancellables: Set<AnyCancellable> {
         get {
-            objc_getAssociatedObject(self, &AssociatedKeys.cancellables) as? Set<AnyCancellable> ?? Set<AnyCancellable>()
+            // CRITICAL FIX: Ensure the Set is persisted if it doesn't exist
+            if let existing = objc_getAssociatedObject(self, &AssociatedKeys.cancellables) as? Set<AnyCancellable> {
+                return existing
+            }
+            // Create and persist a new Set
+            let newSet = Set<AnyCancellable>()
+            objc_setAssociatedObject(self, &AssociatedKeys.cancellables, newSet, .OBJC_ASSOCIATION_RETAIN)
+            return newSet
         }
         set {
             objc_setAssociatedObject(self, &AssociatedKeys.cancellables, newValue, .OBJC_ASSOCIATION_RETAIN)

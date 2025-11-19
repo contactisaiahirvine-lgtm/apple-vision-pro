@@ -126,14 +126,26 @@ class PhysicsManager: ObservableObject {
         for (_, body) in physicsBodies {
             guard body.isDynamic else { continue }
 
+            // SAFETY: Check for valid mass to prevent division by zero
+            guard body.mass > 0.001 else {
+                print("WARNING: Physics body has invalid mass: \(body.mass)")
+                continue
+            }
+
             // Linear velocity: v = v + (F/m) * dt
             let acceleration = body.force / body.mass
             body.velocity += acceleration * dt
 
             // Apply max velocity constraint
             let speed = length(body.velocity)
-            if speed > body.maxVelocity {
-                body.velocity = normalize(body.velocity) * body.maxVelocity
+            if speed > body.maxVelocity && speed > 0.001 {
+                // SAFETY: Safe division to prevent NaN
+                body.velocity = (body.velocity / speed) * body.maxVelocity
+            }
+
+            // SAFETY: Check for valid moment of inertia
+            guard body.momentOfInertia > 0.001 else {
+                continue
             }
 
             // Angular velocity from torque
@@ -151,9 +163,11 @@ class PhysicsManager: ObservableObject {
             body.position += body.velocity * dt
 
             // Update rotation
-            if length(body.angularVelocity) > 0.001 {
-                let angle = length(body.angularVelocity) * dt
-                let axis = normalize(body.angularVelocity)
+            let angVelLength = length(body.angularVelocity)
+            if angVelLength > 0.001 {
+                let angle = angVelLength * dt
+                // SAFETY: Safe division to prevent NaN
+                let axis = body.angularVelocity / angVelLength
                 let deltaRotation = simd_quatf(angle: angle, axis: axis)
                 body.rotation = deltaRotation * body.rotation
             }

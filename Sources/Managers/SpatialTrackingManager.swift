@@ -67,8 +67,8 @@ class SpatialTrackingManager: ObservableObject {
             isTrackingActive = true
             print("Spatial tracking started")
 
-            // Start processing updates
-            await processUpdates()
+            // Start processing updates (don't await - it runs in background Task)
+            processUpdates()
 
         } catch {
             print("Failed to start spatial tracking: \(error)")
@@ -86,18 +86,18 @@ class SpatialTrackingManager: ObservableObject {
 
     // MARK: - Update Processing
 
-    private func processUpdates() async {
+    private func processUpdates() {
         guard let planeProvider = planeDetectionProvider else { return }
 
         trackingTask = Task {
             for await update in planeProvider.anchorUpdates {
                 switch update.event {
                 case .added:
-                    await handlePlaneAdded(update.anchor)
+                    handlePlaneAdded(update.anchor)
                 case .updated:
-                    await handlePlaneUpdated(update.anchor)
+                    handlePlaneUpdated(update.anchor)
                 case .removed:
-                    await handlePlaneRemoved(update.anchor)
+                    handlePlaneRemoved(update.anchor)
                 }
             }
         }
@@ -105,14 +105,14 @@ class SpatialTrackingManager: ObservableObject {
 
     // MARK: - Plane Handling
 
-    private func handlePlaneAdded(_ anchor: PlaneAnchor) async {
+    private func handlePlaneAdded(_ anchor: PlaneAnchor) {
         let plane = DetectedPlane(anchor: anchor)
         detectedPlanes[anchor.id] = plane
 
         print("Plane added: \(anchor.classification.description) at \(anchor.originFromAnchorTransform.columns.3)")
 
         // Update corners based on new plane
-        await updateCorners()
+        updateCorners()
 
         // Notify observers
         NotificationCenter.default.post(
@@ -122,20 +122,20 @@ class SpatialTrackingManager: ObservableObject {
         )
     }
 
-    private func handlePlaneUpdated(_ anchor: PlaneAnchor) async {
+    private func handlePlaneUpdated(_ anchor: PlaneAnchor) {
         if let existingPlane = detectedPlanes[anchor.id] {
             existingPlane.update(from: anchor)
 
             // Update corners when planes change
-            await updateCorners()
+            updateCorners()
         }
     }
 
-    private func handlePlaneRemoved(_ anchor: PlaneAnchor) async {
+    private func handlePlaneRemoved(_ anchor: PlaneAnchor) {
         detectedPlanes.removeValue(forKey: anchor.id)
 
         // Update corners after plane removal
-        await updateCorners()
+        updateCorners()
 
         print("Plane removed: \(anchor.id)")
     }
@@ -143,7 +143,7 @@ class SpatialTrackingManager: ObservableObject {
     // MARK: - Corner Detection
 
     /// Detect corners from plane boundaries and intersections
-    private func updateCorners() async {
+    private func updateCorners() {
         var corners: [DetectedCorner] = []
 
         // Method 1: Extract corners from plane boundaries

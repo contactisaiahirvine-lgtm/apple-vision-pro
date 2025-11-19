@@ -39,9 +39,11 @@ class GameManager: ObservableObject {
         await setupLighting(root: root)
 
         // Create local player entity
-        await createPlayerEntity(for: localPlayer!)
-        if let playerEntity = localPlayer?.entity {
-            root.addChild(playerEntity)
+        if let player = localPlayer {
+            await createPlayerEntity(for: player)
+            if let playerEntity = player.entity {
+                root.addChild(playerEntity)
+            }
         }
 
         // Setup ground plane
@@ -128,6 +130,7 @@ class GameManager: ObservableObject {
     func startGame() {
         isGameActive = true
         localPlayer?.position = SIMD3<Float>(0, 1, -2)
+        startGameLoop()  // CRITICAL FIX: Actually start the game loop
     }
 
     func stopGame() {
@@ -158,14 +161,30 @@ class GameManager: ObservableObject {
     }
 
     private func updateGame(deltaTime: Float) {
+        // Update physics if enabled
+        if GameConfig.physicsEnabled, let physicsManager = physicsManager {
+            physicsManager.update(deltaTime: deltaTime)
+            updatePhysics(deltaTime: deltaTime)
+        }
+
         // Update local player
         if let localPlayer = localPlayer {
             // Apply movement based on drag input
             if length(movementDirection) > 0 {
-                localPlayer.move(direction: movementDirection, speed: 2.0)
+                if GameConfig.physicsEnabled {
+                    // Use physics-based movement
+                    localPlayer.moveWithPhysics(direction: movementDirection, speed: GameConfig.defaultPlayerSpeed * 100)
+                } else {
+                    // Use simple movement
+                    localPlayer.move(direction: movementDirection, speed: 2.0)
+                }
             }
 
-            localPlayer.updatePosition(deltaTime: deltaTime)
+            if GameConfig.physicsEnabled {
+                localPlayer.updateWithPhysics(deltaTime: deltaTime)
+            } else {
+                localPlayer.updatePosition(deltaTime: deltaTime)
+            }
 
             // Broadcast local player state
             NotificationCenter.default.post(
@@ -177,7 +196,11 @@ class GameManager: ObservableObject {
 
         // Update remote players
         for (_, player) in remotePlayers {
-            player.updatePosition(deltaTime: deltaTime)
+            if GameConfig.physicsEnabled {
+                player.updateWithPhysics(deltaTime: deltaTime)
+            } else {
+                player.updatePosition(deltaTime: deltaTime)
+            }
         }
     }
 
