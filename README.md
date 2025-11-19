@@ -5,9 +5,11 @@ A comprehensive boilerplate for building multiplayer AR games on Apple Vision Pr
 ## Features
 
 - **Immersive AR Experience**: Full mixed reality support using visionOS
+- **Spatial Awareness**: Real-world plane and corner detection using ARKit
 - **Player Movement**: Intuitive drag-based movement controls with physics
 - **Multiplayer Support**: Peer-to-peer networking using MultipeerConnectivity
 - **Real-time Synchronization**: Automatic player state synchronization across devices
+- **Environment Understanding**: Automatic detection of floors, walls, and room geometry
 - **Extensible Architecture**: Clean, modular codebase ready for expansion
 
 ## Project Structure
@@ -22,13 +24,16 @@ VisionProARGame/
 │   ├── Models/
 │   │   └── Player.swift         # Player model and network data
 │   ├── Managers/
-│   │   ├── GameManager.swift    # Core game logic and state
-│   │   └── NetworkManager.swift # Multiplayer networking
+│   │   ├── GameManager.swift           # Core game logic and state
+│   │   ├── NetworkManager.swift        # Multiplayer networking
+│   │   └── SpatialTrackingManager.swift # Plane & corner detection
 │   ├── Extensions/
-│   │   └── GameManager+Networking.swift  # Network event handlers
+│   │   ├── GameManager+Networking.swift      # Network event handlers
+│   │   └── GameManager+SpatialTracking.swift # Spatial integration
 │   ├── Utilities/
-│   │   ├── InputController.swift        # Input processing
-│   │   └── EntityFactory.swift          # RealityKit entity creation
+│   │   ├── InputController.swift    # Input processing
+│   │   ├── EntityFactory.swift      # RealityKit entity creation
+│   │   └── SpatialVisualizer.swift  # Spatial feature visualization
 │   └── Config/
 │       └── GameConfig.swift     # Game configuration constants
 ```
@@ -72,13 +77,33 @@ Since this uses Swift Package Manager, you can:
 
 ## How to Use
 
+### Starting Spatial Tracking
+
+1. Launch the app
+2. Tap "Start Tracking"
+3. Move your device to scan the room
+4. Watch as planes and corners are detected
+5. Toggle "Show Debug" to visualize detected features
+
+**What gets detected**:
+- Floors and ceilings
+- Walls and doors
+- Tables and furniture
+- Room corners and edges
+
 ### Starting a Single Player Game
 
 1. Launch the app
-2. Tap "Start AR Game"
-3. The immersive AR view will open
-4. Use drag gestures to move your player
-5. Tap to jump
+2. (Optional) Enable spatial tracking first
+3. Tap "Start AR Game"
+4. The immersive AR view will open
+5. Use drag gestures to move your player
+6. Tap to jump
+
+**With Spatial Tracking**:
+- Player automatically snaps to detected floor
+- Walls create invisible collision boundaries
+- Items can spawn on detected surfaces
 
 ### Starting a Multiplayer Session
 
@@ -108,6 +133,7 @@ Manages the core game state, player entities, and game loop. Runs at ~60 FPS and
 - Scene setup and updates
 - Entity management
 - Game state broadcasting
+- Spatial tracking integration
 
 ### NetworkManager
 Handles all multiplayer networking using MultipeerConnectivity:
@@ -115,6 +141,19 @@ Handles all multiplayer networking using MultipeerConnectivity:
 - Reliable data transmission
 - Player state synchronization
 - Connection management
+
+### SpatialTrackingManager
+Manages real-world spatial understanding using ARKit:
+- **Plane Detection**: Automatic detection of floors, walls, tables, etc.
+- **Corner Recognition**: Algorithmic detection of room corners and edges
+- **Real-time Updates**: Continuous tracking of environment changes
+- **Spatial Queries**: Find nearest planes, corners, and surfaces
+
+**Corner Detection Methods**:
+1. **Boundary Extraction**: Corners from plane edges
+2. **Plane Intersection**: Corners where walls meet, or wall meets floor
+
+See [SPATIAL_TRACKING.md](SPATIAL_TRACKING.md) for detailed documentation.
 
 ### Player Model
 Represents both local and remote players with:
@@ -241,6 +280,54 @@ This boilerplate uses MultipeerConnectivity with encryption enabled by default. 
 - Validate all network data
 - Consider implementing server-authoritative logic for competitive games
 
+## Spatial Tracking Features
+
+### What You Get
+
+**Automatic Detection**:
+- ✅ Horizontal planes (floors, tables, desks)
+- ✅ Vertical planes (walls, doors, windows)
+- ✅ Plane classification (floor, wall, ceiling, table, etc.)
+- ✅ Boundary corners from plane edges
+- ✅ Intersection corners where planes meet
+- ✅ Real-time updates as environment changes
+
+**Visualization** (Debug Mode):
+- Blue spheres: Boundary corners
+- Green spheres: Intersection corners (room corners)
+- Yellow lines: Plane boundaries
+- Semi-transparent fills: Detected surfaces
+- Normal indicators: Surface orientation
+
+**Game Integration**:
+- Dynamic spawn points based on room layout
+- Wall collision detection
+- Floor-level player snapping
+- Surface-based item placement
+- Spatial queries for gameplay
+
+### Usage Example
+
+```swift
+// Get the spatial manager
+@EnvironmentObject var spatialTrackingManager: SpatialTrackingManager
+
+// Find nearest corner
+let corner = spatialTrackingManager.getNearestCorner(to: playerPosition)
+
+// Get all floors
+let floors = spatialTrackingManager.getHorizontalPlanes()
+    .filter { $0.classification == .floor }
+
+// Find room corners for hiding spots
+let corners = spatialTrackingManager.getCornersNear(
+    position: playerPos,
+    radius: 5.0
+)
+```
+
+See **[SPATIAL_TRACKING.md](SPATIAL_TRACKING.md)** for complete documentation.
+
 ## Future Enhancements
 
 Potential additions to this boilerplate:
@@ -248,13 +335,15 @@ Potential additions to this boilerplate:
 - [ ] Voice chat integration
 - [ ] Game rooms/lobbies
 - [ ] Persistent world state
-- [ ] AI opponents
+- [ ] AI opponents using spatial awareness
 - [ ] Power-ups and collectibles
 - [ ] Score tracking and leaderboards
 - [ ] Custom avatar support
 - [ ] Gesture-based controls
 - [ ] Spatial audio
 - [ ] Hand tracking integration
+- [ ] Occlusion using scene mesh
+- [ ] Persistent spatial anchors
 
 ## License
 

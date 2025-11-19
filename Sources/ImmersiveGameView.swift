@@ -5,6 +5,7 @@ import ARKit
 struct ImmersiveGameView: View {
     @EnvironmentObject var gameManager: GameManager
     @EnvironmentObject var networkManager: NetworkManager
+    @EnvironmentObject var spatialTrackingManager: SpatialTrackingManager
 
     var body: some View {
         RealityView { content in

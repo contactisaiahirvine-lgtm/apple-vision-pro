@@ -4,8 +4,11 @@ import RealityKit
 struct ContentView: View {
     @EnvironmentObject var gameManager: GameManager
     @EnvironmentObject var networkManager: NetworkManager
+    @EnvironmentObject var spatialTrackingManager: SpatialTrackingManager
     @Environment(\.openImmersiveSpace) var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+
+    @State private var showSpatialDebug = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -19,6 +22,37 @@ struct ContentView: View {
                     .fill(networkManager.isConnected ? Color.green : Color.red)
                     .frame(width: 12, height: 12)
                 Text(networkManager.isConnected ? "Connected" : "Disconnected")
+            }
+
+            // Spatial Tracking Status
+            HStack {
+                Circle()
+                    .fill(spatialTrackingManager.isTrackingActive ? Color.blue : Color.gray)
+                    .frame(width: 12, height: 12)
+                Text("Spatial: \(spatialTrackingManager.isTrackingActive ? "Active" : "Inactive")")
+            }
+
+            // Spatial Info
+            if spatialTrackingManager.isTrackingActive {
+                HStack(spacing: 20) {
+                    VStack {
+                        Text("\(spatialTrackingManager.detectedPlanes.count)")
+                            .font(.title2)
+                            .bold()
+                        Text("Planes")
+                            .font(.caption)
+                    }
+                    VStack {
+                        Text("\(spatialTrackingManager.detectedCorners.count)")
+                            .font(.title2)
+                            .bold()
+                        Text("Corners")
+                            .font(.caption)
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(10)
             }
 
             // Player Info
@@ -37,6 +71,33 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(gameManager.isGameActive)
+
+                // Spatial Tracking Controls
+                HStack(spacing: 10) {
+                    Button(spatialTrackingManager.isTrackingActive ? "Stop Tracking" : "Start Tracking") {
+                        Task {
+                            if spatialTrackingManager.isTrackingActive {
+                                spatialTrackingManager.stopTracking()
+                            } else {
+                                await spatialTrackingManager.startTracking()
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered)
+
+                    if spatialTrackingManager.isTrackingActive {
+                        Button(showSpatialDebug ? "Hide Debug" : "Show Debug") {
+                            showSpatialDebug.toggle()
+                            gameManager.toggleSpatialVisualization(
+                                enabled: showSpatialDebug,
+                                manager: spatialTrackingManager
+                            )
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+
+                Divider()
 
                 Button("Host Multiplayer Session") {
                     networkManager.startHosting()
