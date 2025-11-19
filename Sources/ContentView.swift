@@ -9,6 +9,7 @@ struct ContentView: View {
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
 
     @State private var showSpatialDebug = false
+    @State private var showAssetPlacement = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -95,6 +96,14 @@ struct ContentView: View {
                         }
                         .buttonStyle(.bordered)
                     }
+                }
+
+                // 3D Asset Placement
+                if gameManager.isGameActive {
+                    Button("3D Asset Placement") {
+                        showAssetPlacement = true
+                    }
+                    .buttonStyle(.bordered)
                 }
 
                 Divider()
@@ -202,5 +211,18 @@ struct ContentView: View {
             }
         }
         .padding()
+        .sheet(isPresented: $showAssetPlacement) {
+            if let assetManager = gameManager.assetManager,
+               let placementManager = gameManager.placementManager {
+                AssetPlacementView(
+                    assetManager: assetManager,
+                    placementManager: placementManager
+                )
+                .environmentObject(gameManager)
+            } else {
+                Text("Asset placement system not initialized")
+                    .padding()
+            }
+        }
     }
 }

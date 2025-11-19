@@ -27,6 +27,9 @@ struct VisionProARGameApp: App {
                     // Setup voice chat system
                     gameManager.setupVoiceChat()
                     networkManager.setupVoiceChatForwarding()
+
+                    // Setup 3D asset placement system
+                    gameManager.setupAssetPlacement()
                 }
         }
 
