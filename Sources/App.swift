@@ -6,6 +6,7 @@ struct VisionProARGameApp: App {
     @StateObject private var gameManager = GameManager()
     @StateObject private var networkManager = NetworkManager()
     @StateObject private var spatialTrackingManager = SpatialTrackingManager()
+    @StateObject private var physicsManager = PhysicsManager()
 
     var body: some Scene {
         WindowGroup {
@@ -13,9 +14,15 @@ struct VisionProARGameApp: App {
                 .environmentObject(gameManager)
                 .environmentObject(networkManager)
                 .environmentObject(spatialTrackingManager)
+                .environmentObject(physicsManager)
                 .onAppear {
                     // Setup spatial tracking listeners in game manager
                     gameManager.setupSpatialTrackingListeners(manager: spatialTrackingManager)
+
+                    // Setup physics system
+                    if GameConfig.physicsEnabled {
+                        gameManager.setupPhysics(manager: physicsManager)
+                    }
                 }
         }
 
@@ -24,6 +31,7 @@ struct VisionProARGameApp: App {
                 .environmentObject(gameManager)
                 .environmentObject(networkManager)
                 .environmentObject(spatialTrackingManager)
+                .environmentObject(physicsManager)
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)
     }

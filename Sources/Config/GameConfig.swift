@@ -25,6 +25,20 @@ enum GameConfig {
     static let targetFrameRate = 60
     static let enableDebugMode = true
 
+    // MARK: - Physics Settings
+    static let physicsEnabled = true
+    static let physicsDebugVisualization = false
+    static let physicsTimeStep: Float = 1.0 / 60.0  // 60 Hz physics
+    static let maxPhysicsIterations = 10
+
+    // Physics layers
+    static let defaultCollisionMask: UInt32 = PhysicsLayer.all
+
+    // Common physics materials
+    static let playerMaterial = PhysicsMaterial.default
+    static let environmentMaterial = PhysicsMaterial.default
+    static let itemMaterial = PhysicsMaterial(friction: 0.3, bounciness: 0.5, density: 0.5)
+
     // MARK: - Spawn Points
     static let spawnPoints: [SIMD3<Float>] = [
         SIMD3<Float>(0, 1, -2),

@@ -5,6 +5,7 @@ A comprehensive boilerplate for building multiplayer AR games on Apple Vision Pr
 ## Features
 
 - **Immersive AR Experience**: Full mixed reality support using visionOS
+- **Physics Simulation**: Complete rigid body dynamics with collisions, forces, and materials
 - **Spatial Awareness**: Real-world plane and corner detection using ARKit
 - **Player Movement**: Intuitive drag-based movement controls with physics
 - **Multiplayer Support**: Peer-to-peer networking using MultipeerConnectivity
@@ -24,16 +25,23 @@ VisionProARGame/
 │   ├── Models/
 │   │   └── Player.swift         # Player model and network data
 │   ├── Managers/
-│   │   ├── GameManager.swift           # Core game logic and state
-│   │   ├── NetworkManager.swift        # Multiplayer networking
-│   │   └── SpatialTrackingManager.swift # Plane & corner detection
+│   │   ├── GameManager.swift            # Core game logic and state
+│   │   ├── NetworkManager.swift         # Multiplayer networking
+│   │   ├── SpatialTrackingManager.swift # Plane & corner detection
+│   │   └── PhysicsManager.swift         # Physics simulation engine
+│   ├── Models/
+│   │   ├── Player.swift     # Player model and network data
+│   │   └── PhysicsBody.swift # Physics body component
 │   ├── Extensions/
-│   │   ├── GameManager+Networking.swift      # Network event handlers
-│   │   └── GameManager+SpatialTracking.swift # Spatial integration
+│   │   ├── GameManager+Networking.swift       # Network event handlers
+│   │   ├── GameManager+SpatialTracking.swift  # Spatial integration
+│   │   ├── GameManager+Physics.swift          # Physics integration
+│   │   └── Player+Physics.swift               # Player physics helpers
 │   ├── Utilities/
-│   │   ├── InputController.swift    # Input processing
-│   │   ├── EntityFactory.swift      # RealityKit entity creation
-│   │   └── SpatialVisualizer.swift  # Spatial feature visualization
+│   │   ├── InputController.swift      # Input processing
+│   │   ├── EntityFactory.swift        # RealityKit entity creation
+│   │   ├── SpatialVisualizer.swift    # Spatial feature visualization
+│   │   └── PhysicsDebugRenderer.swift # Physics debug visualization
 │   └── Config/
 │       └── GameConfig.swift     # Game configuration constants
 ```
@@ -154,6 +162,24 @@ Manages real-world spatial understanding using ARKit:
 2. **Plane Intersection**: Corners where walls meet, or wall meets floor
 
 See [SPATIAL_TRACKING.md](SPATIAL_TRACKING.md) for detailed documentation.
+
+### PhysicsManager
+Complete physics simulation system built from scratch:
+- **Rigid Body Dynamics**: Mass, velocity, forces, and impulses
+- **Collision Detection**: Sphere, box, and capsule colliders
+- **Material Properties**: Friction, bounciness, and density
+- **Collision Resolution**: Realistic physics response with restitution
+- **Raycasting**: Query the physics world
+- **Constraints**: Freeze position/rotation on specific axes
+
+**Supported Features**:
+- Fixed timestep simulation (60 Hz)
+- Multiple motion types (dynamic, static, kinematic)
+- Collision layers and masks
+- Per-body and global collision callbacks
+- Force, impulse, and torque application
+
+See [PHYSICS.md](PHYSICS.md) for complete physics documentation.
 
 ### Player Model
 Represents both local and remote players with:
@@ -327,6 +353,69 @@ let corners = spatialTrackingManager.getCornersNear(
 ```
 
 See **[SPATIAL_TRACKING.md](SPATIAL_TRACKING.md)** for complete documentation.
+
+## Physics System
+
+### Complete Rigid Body Simulation
+
+**Features**:
+- ✅ Mass, velocity, acceleration
+- ✅ Forces and impulses
+- ✅ Gravity simulation
+- ✅ Collision detection (sphere, box, capsule)
+- ✅ Material properties (friction, bounciness)
+- ✅ Collision layers for filtering
+- ✅ Constraints (freeze axes)
+- ✅ Raycasting
+- ✅ Collision callbacks
+
+### Usage Example
+
+```swift
+// Create physics-enabled object
+let body = PhysicsBody.builder()
+    .at(position: SIMD3<Float>(0, 2, 0))
+    .withMass(1.0)
+    .withCollider(.sphere(radius: 0.5))
+    .withMaterial(.rubber)  // Bouncy!
+    .build()
+
+physicsManager.addPhysicsBody(body)
+
+// Apply force
+body.addForce(SIMD3<Float>(10, 0, 0))
+
+// Apply impulse (instant)
+body.addImpulse(SIMD3<Float>(0, 5, 0))
+
+// Raycast
+if let hit = physicsManager.raycast(origin: pos, direction: dir) {
+    print("Hit at: \(hit.point)")
+}
+```
+
+### Physics Materials
+
+Predefined materials:
+- **Default**: Balanced properties
+- **Ice**: Low friction (0.1)
+- **Rubber**: High bounce (0.9)
+- **Metal**: Smooth, medium bounce
+- **Wood**: Natural feel
+- **Bouncy**: Super bouncy (0.95)
+- **Frictionless**: No friction
+
+### Player Physics
+
+Players automatically use physics when enabled:
+```swift
+player.setupPhysics(physicsManager: physicsManager)
+player.moveWithPhysics(direction: dir, speed: 5.0)
+player.jump(force: 300.0)
+player.dash(direction: dir, force: 500.0)
+```
+
+See **[PHYSICS.md](PHYSICS.md)** for complete physics documentation.
 
 ## Future Enhancements
 
