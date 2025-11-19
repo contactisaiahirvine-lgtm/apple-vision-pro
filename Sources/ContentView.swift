@@ -111,16 +111,36 @@ struct ContentView: View {
                 // Voice Chat Controls
                 if networkManager.isConnected && gameManager.isGameActive {
                     VStack(spacing: 10) {
-                        Text("Voice Chat")
-                            .font(.headline)
+                        HStack {
+                            Text("Voice Chat")
+                                .font(.headline)
+                            Spacer()
+                            if gameManager.isProximityVoiceChatEnabled {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "antenna.radiowaves.left.and.right")
+                                        .foregroundColor(.blue)
+                                    Text("Proximity")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
 
                         HStack(spacing: 10) {
                             Button(gameManager.isRecordingVoice ? "Stop Voice" : "Start Voice") {
                                 Task {
                                     if gameManager.isRecordingVoice {
-                                        gameManager.stopVoiceChat()
+                                        if gameManager.isProximityVoiceChatEnabled {
+                                            gameManager.stopProximityVoiceChat()
+                                        } else {
+                                            gameManager.stopVoiceChat()
+                                        }
                                     } else {
-                                        try? await gameManager.startVoiceChat()
+                                        if gameManager.isProximityVoiceChatEnabled {
+                                            try? await gameManager.startProximityVoiceChat()
+                                        } else {
+                                            try? await gameManager.startVoiceChat()
+                                        }
                                     }
                                 }
                             }
@@ -134,6 +154,75 @@ struct ContentView: View {
                                 .buttonStyle(.bordered)
                                 .tint(gameManager.isVoiceMuted ? .red : .green)
                             }
+                        }
+
+                        // Proximity Voice Chat Settings
+                        if gameManager.isProximityVoiceChatEnabled {
+                            VStack(spacing: 8) {
+                                Text("Proximity Settings")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                // Preset Buttons
+                                HStack(spacing: 8) {
+                                    ForEach(["Close", "Normal", "Long", "Whisper"], id: \.self) { preset in
+                                        Button(preset) {
+                                            let presetValue: ProximityVoiceChatManager.Preset
+                                            switch preset {
+                                            case "Close": presetValue = .closeRange
+                                            case "Normal": presetValue = .normal
+                                            case "Long": presetValue = .longRange
+                                            case "Whisper": presetValue = .whispering
+                                            default: presetValue = .normal
+                                            }
+                                            gameManager.setProximityVoiceChatPreset(presetValue)
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .font(.caption)
+                                    }
+                                }
+
+                                // Players in Range
+                                let playersInRange = gameManager.getPlayersInVoiceRange()
+                                if !playersInRange.isEmpty {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Players in Range (\(playersInRange.count))")
+                                            .font(.caption)
+                                            .bold()
+                                        ForEach(playersInRange, id: \.0) { playerID, distance in
+                                            HStack {
+                                                Image(systemName: "person.wave.2")
+                                                    .font(.caption2)
+                                                Text(String(format: "%.1fm", distance))
+                                                    .font(.caption2)
+                                                Spacer()
+                                                // Volume indicator
+                                                let volume = gameManager.voiceVolumeForPlayer(playerID)
+                                                HStack(spacing: 2) {
+                                                    ForEach(0..<5) { i in
+                                                        Rectangle()
+                                                            .fill(Float(i) < volume * 5 ? Color.green : Color.gray.opacity(0.3))
+                                                            .frame(width: 3, height: CGFloat(4 + i * 2))
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 2)
+                                            .background(Color.blue.opacity(0.1))
+                                            .cornerRadius(4)
+                                        }
+                                    }
+                                } else if gameManager.isRecordingVoice {
+                                    HStack {
+                                        Image(systemName: "antenna.radiowaves.left.and.right.slash")
+                                            .foregroundColor(.orange)
+                                        Text("No players in range")
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
                         }
 
                         // Audio Level Indicator

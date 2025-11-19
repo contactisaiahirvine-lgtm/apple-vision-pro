@@ -152,7 +152,21 @@ class NetworkManager: NSObject, ObservableObject {
     }
 
     private func handleGameEvent(_ data: Data, from peer: MCPeerID) {
-        // Handle custom game events
+        // Check if this is a proximity voice chat message
+        if let proximityData = try? JSONDecoder().decode(ProximityVoiceChatData.self, from: data) {
+            NotificationCenter.default.post(
+                name: .proximityVoiceChatReceived,
+                object: nil,
+                userInfo: [
+                    "participantID": proximityData.participantID,
+                    "audioData": proximityData.audioData,
+                    "position": proximityData.position
+                ]
+            )
+            return
+        }
+
+        // Handle other custom game events
         // This can be extended for game-specific logic
         NotificationCenter.default.post(
             name: .gameEventReceived,
@@ -338,4 +352,40 @@ extension Notification.Name {
     static let remotePlayerLeft = Notification.Name("remotePlayerLeft")
     static let gameEventReceived = Notification.Name("gameEventReceived")
     static let voiceChatReceived = Notification.Name("voiceChatReceived")
+    static let proximityVoiceChatReceived = Notification.Name("proximityVoiceChatReceived")
+}
+
+// MARK: - Proximity Voice Chat Data
+
+/// Network data for proximity voice chat (shared with GameManager+ProximityVoiceChat)
+struct ProximityVoiceChatData: Codable {
+    let participantID: UUID
+    let audioData: Data
+    let position: SIMD3<Float>
+
+    enum CodingKeys: String, CodingKey {
+        case participantID, audioData, position
+    }
+
+    init(participantID: UUID, audioData: Data, position: SIMD3<Float>) {
+        self.participantID = participantID
+        self.audioData = audioData
+        self.position = position
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        participantID = try container.decode(UUID.self, forKey: .participantID)
+        audioData = try container.decode(Data.self, forKey: .audioData)
+
+        let posArray = try container.decode([Float].self, forKey: .position)
+        position = SIMD3<Float>(posArray[0], posArray[1], posArray[2])
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(participantID, forKey: .participantID)
+        try container.encode(audioData, forKey: .audioData)
+        try container.encode([position.x, position.y, position.z], forKey: .position)
+    }
 }
