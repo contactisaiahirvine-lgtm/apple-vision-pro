@@ -23,6 +23,10 @@ struct VisionProARGameApp: App {
                     if GameConfig.physicsEnabled {
                         gameManager.setupPhysics(manager: physicsManager)
                     }
+
+                    // Setup voice chat system
+                    gameManager.setupVoiceChat()
+                    networkManager.setupVoiceChatForwarding()
                 }
         }
 

@@ -141,6 +141,13 @@ class NetworkManager: NSObject, ObservableObject {
 
         case .gameEvent(let eventData):
             handleGameEvent(eventData, from: peer)
+
+        case .voiceChat(let participantID, let audioData):
+            NotificationCenter.default.post(
+                name: .voiceChatReceived,
+                object: nil,
+                userInfo: ["participantID": participantID, "audioData": audioData]
+            )
         }
     }
 
@@ -265,13 +272,14 @@ enum NetworkMessage: Codable {
     case playerJoined(Data)
     case playerLeft(UUID)
     case gameEvent(Data)
+    case voiceChat(participantID: UUID, audioData: Data)
 
     enum CodingKeys: String, CodingKey {
-        case type, payload
+        case type, payload, participantID
     }
 
     enum MessageType: String, Codable {
-        case playerUpdate, playerJoined, playerLeft, gameEvent
+        case playerUpdate, playerJoined, playerLeft, gameEvent, voiceChat
     }
 
     init(from decoder: Decoder) throws {
@@ -291,6 +299,10 @@ enum NetworkMessage: Codable {
         case .gameEvent:
             let data = try container.decode(Data.self, forKey: .payload)
             self = .gameEvent(data)
+        case .voiceChat:
+            let participantID = try container.decode(UUID.self, forKey: .participantID)
+            let audioData = try container.decode(Data.self, forKey: .payload)
+            self = .voiceChat(participantID: participantID, audioData: audioData)
         }
     }
 
@@ -310,6 +322,10 @@ enum NetworkMessage: Codable {
         case .gameEvent(let data):
             try container.encode(MessageType.gameEvent, forKey: .type)
             try container.encode(data, forKey: .payload)
+        case .voiceChat(let participantID, let audioData):
+            try container.encode(MessageType.voiceChat, forKey: .type)
+            try container.encode(participantID, forKey: .participantID)
+            try container.encode(audioData, forKey: .payload)
         }
     }
 }
@@ -321,4 +337,5 @@ extension Notification.Name {
     static let remotePlayerJoined = Notification.Name("remotePlayerJoined")
     static let remotePlayerLeft = Notification.Name("remotePlayerLeft")
     static let gameEventReceived = Notification.Name("gameEventReceived")
+    static let voiceChatReceived = Notification.Name("voiceChatReceived")
 }

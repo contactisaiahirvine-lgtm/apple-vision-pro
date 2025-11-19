@@ -99,6 +99,70 @@ struct ContentView: View {
 
                 Divider()
 
+                // Voice Chat Controls
+                if networkManager.isConnected && gameManager.isGameActive {
+                    VStack(spacing: 10) {
+                        Text("Voice Chat")
+                            .font(.headline)
+
+                        HStack(spacing: 10) {
+                            Button(gameManager.isRecordingVoice ? "Stop Voice" : "Start Voice") {
+                                Task {
+                                    if gameManager.isRecordingVoice {
+                                        gameManager.stopVoiceChat()
+                                    } else {
+                                        try? await gameManager.startVoiceChat()
+                                    }
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(gameManager.isRecordingVoice ? .red : .blue)
+
+                            if gameManager.isRecordingVoice {
+                                Button(gameManager.isVoiceMuted ? "Unmute" : "Mute") {
+                                    gameManager.toggleVoiceMute()
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(gameManager.isVoiceMuted ? .red : .green)
+                            }
+                        }
+
+                        // Audio Level Indicator
+                        if gameManager.isRecordingVoice && !gameManager.isVoiceMuted {
+                            VStack(spacing: 5) {
+                                Text("Audio Level")
+                                    .font(.caption)
+                                GeometryReader { geometry in
+                                    ZStack(alignment: .leading) {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.gray.opacity(0.3))
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.green)
+                                            .frame(width: geometry.size.width * CGFloat(gameManager.audioLevel))
+                                    }
+                                }
+                                .frame(height: 8)
+                            }
+                            .padding(.horizontal)
+                        }
+
+                        // Active Speakers
+                        if !gameManager.activeSpeakers.isEmpty {
+                            HStack {
+                                Image(systemName: "waveform")
+                                    .foregroundColor(.green)
+                                Text("\(gameManager.activeSpeakers.count) speaking")
+                                    .font(.caption)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(10)
+
+                    Divider()
+                }
+
                 Button("Host Multiplayer Session") {
                     networkManager.startHosting()
                 }
