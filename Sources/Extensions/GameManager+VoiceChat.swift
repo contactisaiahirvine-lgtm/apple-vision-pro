@@ -21,6 +21,8 @@ extension GameManager {
         voiceChatManager = manager
 
         // Hook up audio output to network
+        // NOTE: This callback is invoked on the main actor by VoiceChatManager,
+        // so it's safe to access main-actor properties like localPlayer
         manager.onAudioDataReady = { [weak self] audioData in
             self?.sendVoiceChat(audioData: audioData)
         }

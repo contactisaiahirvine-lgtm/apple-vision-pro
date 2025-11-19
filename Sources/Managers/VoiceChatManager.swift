@@ -124,36 +124,60 @@ class VoiceChatManager: NSObject, ObservableObject {
     // MARK: - Audio Processing
 
     private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
-        // Don't send if muted
-        guard !isMuted else { return }
+        // SAFETY: This function is called from the audio engine's real-time thread.
+        // We must not access @MainActor properties directly from here.
 
-        // Calculate audio level for UI feedback
-        updateAudioLevel(from: buffer)
-
-        // Encode audio data for network transmission
+        // Encode audio data (pure computation, thread-safe)
         guard let audioData = audioConverter.encode(buffer: buffer, quality: audioQuality) else {
             return
         }
 
-        // Send to network
-        onAudioDataReady?(audioData)
+        // Calculate audio level data (pure computation, thread-safe)
+        let levelData = calculateAudioLevelData(from: buffer)
+
+        // Dispatch to main actor to access properties and invoke callback
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+
+            // Now safely check mute status on main actor
+            guard !self.isMuted else { return }
+
+            // Update audio level for UI
+            self.audioLevel = levelData
+
+            // Invoke callback (now on main thread)
+            self.onAudioDataReady?(audioData)
+        }
     }
 
-    private func updateAudioLevel(from buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData else { return }
+    private func calculateAudioLevelData(from buffer: AVAudioPCMBuffer) -> Float {
+        guard let channelData = buffer.floatChannelData else { return 0.0 }
 
         let channelDataValue = channelData.pointee
-        let channelDataValueArray = stride(from: 0, to: Int(buffer.frameLength), by: buffer.stride).map { channelDataValue[$0] }
+        // FIX: Simple iteration for non-interleaved mono format (removed invalid buffer.stride)
+        let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return 0.0 }
 
-        let rms = sqrt(channelDataValueArray.map { $0 * $0 }.reduce(0, +) / Float(buffer.frameLength))
-        let avgPower = 20 * log10(rms)
+        var sumOfSquares: Float = 0.0
+        for i in 0..<frameLength {
+            let sample = channelDataValue[i]
+            sumOfSquares += sample * sample
+        }
+
+        let rms = sqrt(sumOfSquares / Float(frameLength))
+
+        // SAFETY: Guard against log10(0) or log10(negative) to prevent -Infinity/NaN
+        let avgPower: Float
+        if rms > 0.0001 {  // Small threshold to avoid log10(0)
+            avgPower = 20 * log10(rms)
+        } else {
+            avgPower = -100.0  // Silence
+        }
 
         // Normalize to 0.0 - 1.0 range
         let normalizedLevel = max(0.0, min(1.0, (avgPower + 50.0) / 50.0))
 
-        DispatchQueue.main.async {
-            self.audioLevel = normalizedLevel
-        }
+        return normalizedLevel
     }
 
     // MARK: - Remote Audio Playback
@@ -238,8 +262,9 @@ class VoiceChatManager: NSObject, ObservableObject {
     func cleanup() {
         stopRecording()
 
-        // Remove all players
-        for (id, _) in audioPlayers {
+        // SAFETY: Copy keys before iteration to avoid mutating dictionary while iterating
+        let playerIDs = Array(audioPlayers.keys)
+        for id in playerIDs {
             removePlayer(for: id)
         }
 
