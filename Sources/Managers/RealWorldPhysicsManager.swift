@@ -112,24 +112,32 @@ class RealWorldPhysicsManager: ObservableObject {
 
         if useSimplifiedCollision {
             // Use bounding box for performance
-            let vertices = geometry.vertices
+            let verticesBuffer = geometry.vertices
+            let vertexCount = verticesBuffer.count
+
             var minBounds = SIMD3<Float>(Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude)
             var maxBounds = SIMD3<Float>(-Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude)
 
-            for i in 0..<vertices.count {
-                let vertex = SIMD3<Float>(
-                    vertices[i].0,
-                    vertices[i].1,
-                    vertices[i].2
-                )
+            // Access vertex buffer pointer
+            let vertexPointer = verticesBuffer.buffer.contents().assumingMemoryBound(to: SIMD3<Float>.self)
+
+            for i in 0..<vertexCount {
+                let vertex = vertexPointer[i]
                 minBounds = simd_min(minBounds, vertex)
                 maxBounds = simd_max(maxBounds, vertex)
             }
 
             let size = maxBounds - minBounds
-            let center = (minBounds + maxBounds) / 2
 
-            return ShapeResource.generateBox(size: size)
+            // Ensure minimum size to avoid zero-sized boxes
+            let minSize: Float = 0.01
+            let finalSize = SIMD3<Float>(
+                max(size.x, minSize),
+                max(size.y, minSize),
+                max(size.z, minSize)
+            )
+
+            return ShapeResource.generateBox(size: finalSize)
         } else {
             // Use actual mesh (more accurate but slower)
             // Would convert ARMeshGeometry to MeshResource

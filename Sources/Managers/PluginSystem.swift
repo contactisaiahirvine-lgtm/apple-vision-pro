@@ -1,6 +1,7 @@
 import Foundation
 import RealityKit
 import Metal
+import AVFAudio
 
 /// Extensible plugin system for custom rendering passes, ECS systems, and processors
 @MainActor
