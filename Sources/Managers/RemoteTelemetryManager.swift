@@ -186,7 +186,7 @@ class RemoteTelemetryManager: ObservableObject {
     }
 
     private func sendSnapshot(_ snapshot: TelemetrySnapshot) async {
-        guard let url = streamingURL else { return }
+        guard let url = streamingURL, let session = urlSession else { return }
 
         do {
             let data = try JSONEncoder().encode(snapshot)
@@ -195,7 +195,7 @@ class RemoteTelemetryManager: ObservableObject {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = data
 
-            let (_, response) = try await urlSession!.data(for: request)
+            let (_, response) = try await session.data(for: request)
 
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                 snapshotsSent += 1

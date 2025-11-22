@@ -141,8 +141,8 @@ class GPUFramePacingManager: ObservableObject {
 
         // Frame time too high - reduce quality
         if difference > qualityAdjustmentThreshold {
-            if currentQualityLevel.rawValue > 0 {
-                let newLevel = QualityLevel(rawValue: currentQualityLevel.rawValue - 1)!
+            if currentQualityLevel.rawValue > 0,
+               let newLevel = QualityLevel(rawValue: currentQualityLevel.rawValue - 1) {
                 setQualityLevel(newLevel)
                 qualityAdjustments += 1
                 print("⚠️ GPU over budget by \(Int(difference * 1000))ms - reducing to \(newLevel)")
@@ -150,8 +150,8 @@ class GPUFramePacingManager: ObservableObject {
         }
         // Frame time comfortably under budget - increase quality
         else if difference < -qualityAdjustmentThreshold * 2 {
-            if currentQualityLevel.rawValue < QualityLevel.allCases.count - 1 {
-                let newLevel = QualityLevel(rawValue: currentQualityLevel.rawValue + 1)!
+            if currentQualityLevel.rawValue < QualityLevel.allCases.count - 1,
+               let newLevel = QualityLevel(rawValue: currentQualityLevel.rawValue + 1) {
                 setQualityLevel(newLevel)
                 qualityAdjustments += 1
                 print("✅ GPU under budget - increasing to \(newLevel)")
