@@ -77,10 +77,11 @@ class TaskJobSystem {
         pendingJobs.append(id)
         jobsScheduled += 1
 
-        // Sort by priority
+        // Sort by priority (safe unwrapping)
         pendingJobs.sort { id1, id2 in
-            let job1 = jobs[id1]!
-            let job2 = jobs[id2]!
+            guard let job1 = jobs[id1], let job2 = jobs[id2] else {
+                return false
+            }
             return job1.priority > job2.priority
         }
 

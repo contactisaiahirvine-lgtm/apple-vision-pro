@@ -51,6 +51,11 @@ class HotReloadManager: ObservableObject {
         print("✅ Hot-Reload Manager initialized")
     }
 
+    deinit {
+        fileCheckTimer?.invalidate()
+        fileCheckTimer = nil
+    }
+
     // MARK: - Watch Management
 
     /// Start watching files for changes

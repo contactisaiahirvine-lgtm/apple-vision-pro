@@ -229,7 +229,7 @@ class PhysicsGazeTargetingManager: ObservableObject {
         selections += 1
 
         NotificationCenter.default.post(
-            name: .gazeTargetSelected,
+            name: .physicsGazeTargetSelected,
             object: target
         )
 
@@ -315,5 +315,5 @@ struct GazeTargetingStats {
 }
 
 extension Notification.Name {
-    static let gazeTargetSelected = Notification.Name("gazeTargetSelected")
+    static let physicsGazeTargetSelected = Notification.Name("physicsGazeTargetSelected")
 }
